@@ -3,169 +3,78 @@
 > or hold explicit written authorization to assess**. Unauthorized use is
 > prohibited and may be illegal. Read [ETHICS.md](ETHICS.md) and
 > [SCOPE.md](SCOPE.md) before use. Use at your own risk; **AS IS**, no warranty.
+
 # H10 — USB HID Emulator
 
-USB keyboard/mouse emulation and keystroke injection with ESP32-S2/S3.
+USB HID attack tool for hardware security testing — ESP32-S2/S3 firmware that emulates a USB
+keyboard and mouse, injects keystrokes and combos, runs DuckyScript-style payloads, and
+anti-sleep jiggle, with a Python host helper for offline demos.
 
-## Overview
+![MIT](https://img.shields.io/badge/license-MIT-blue.svg)
+![GitHub stars](https://img.shields.io/github/stars/5h4d0wn1k/h10-usb-hid)
+![GitHub last commit](https://img.shields.io/github/last-commit/5h4d0wn1k/h10-usb-hid)
+![GitHub issues](https://img.shields.io/github/issues/5h4d0wn1k/h10-usb-hid)
 
-This project implements a USB Human Interface Device emulator that:
-- Emulates USB keyboard for keystroke injection
-- Emulates USB mouse with movement, click, and scroll
-- Supports key combinations (Ctrl+C, Alt+F4, Win+R, etc.)
-- Predefined macros (Copy, Paste, Lock Screen, etc.)
-- DuckyScript-compatible payload lines
-- Anti-sleep mouse jiggler
-- Serial command interface for interactive use
+## Why
 
-## Hardware
+USB is a trust boundary that rarely stops to ask questions — which is exactly why HID
+keystroke-injection research matters for hardware security. H10 demonstrates how a $15 ESP32-S2/S3
+board with native USB OTG becomes a Human Interface Device: keyboard and mouse emulation, key
+combinations, DuckyScript payload lines, and an anti-sleep jiggler, driven over a serial command
+interface. It is an educational hardware-security and USB-red-team instrument. Keystroke injection
+into any machine you do not own or lack written authorization to test is illegal; keep this on your
+own lab bench.
 
-| Component | Connection | Role |
-|-----------|------------|------|
-| ESP32-S2/S3 DevKit | Main board | Native USB OTG |
-| USB Cable | Native USB port | HID device connection |
+## Features
 
-## Requirements
+- **USB keyboard emulation** — type strings, single keys, and combos (`ctrl+c`, `alt+f4`, `gui+r`).
+- **USB mouse emulation** — relative move, click (left/right/middle), scroll, circle pattern,
+  anti-sleep jiggle.
+- **DuckyScript payloads** — `type`, `gui`, `ctrl`, `delay`, `enter` lines over serial.
+- **Macros** — copy, paste, undo, redo, select-all, save, find, newtab, close, refresh, lock, run,
+  alttab, screenshot.
+- **Host helper** — `host/h10_cli.py --demo` (offline, exit 0) plus `hw_common.py`.
 
-**Board**: ESP32-S2 or ESP32-S3 with native USB OTG support.
+## Quickstart
 
-Standard ESP32 does NOT have USB OTG hardware. Compile with:
-```
-arduino-cli compile --fqbn esp32:esp32:esp32s2
-```
-
-## Serial Commands
-
-### Keyboard
-| Command | Description |
-|---------|-------------|
-| `type <text>` | Type a string character by character |
-| `key <name>` | Press a single key (enter, tab, f1, etc.) |
-| `combo <mod+key>` | Key combination (ctrl+c, alt+f4) |
-| `macro <name>` | Predefined macro |
-
-### Mouse
-| Command | Description |
-|---------|-------------|
-| `mouse <dx> <dy>` | Move mouse relative |
-| `click [right\|middle]` | Click mouse button |
-| `scroll <amount>` | Scroll wheel |
-| `jiggle [amplitude]` | Anti-sleep jiggle |
-| `circle [radius]` | Draw circle pattern |
-
-### Payloads
-| Command | Description |
-|---------|-------------|
-| `payload string <text>` | DuckyScript: type string |
-| `payload gui <key>` | DuckyScript: GUI+key |
-| `payload ctrl <key>` | DuckyScript: Ctrl+key |
-| `payload delay <ms>` | DuckyScript: delay |
-| `payload enter` | DuckyScript: Enter key |
-
-## Key Codes
-
-**Keys**: enter, tab, esc, backspace, space, delete, home, end, pgup, pgdn, up, down, left, right, f1-f12
-
-**Modifiers**: ctrl, shift, alt, gui (win/meta)
-
-**Macros**: copy, paste, undo, redo, selectall, save, find, newtab, close, refresh, lock, run, alttab, screenshot
-
-## Serial Output
-
-```
-=== H10 — USB HID Emulator ===
-[+] USB HID initialized
-
-[*] Typing: Hello World
-[+] Done.
-[*] Combo: ctrl+c
-[+] Combo: ctrl+c
-[*] Mouse move: 100, 0
-[+] Done.
-```
-
-## Build & Flash
+Board: ESP32-S2 or ESP32-S3 (native USB OTG required). Toolchain: Arduino CLI.
 
 ```bash
-# Using Arduino CLI (ESP32-S2)
-arduino-cli compile --fqbn esp32:esp32:esp32s2 firmware/h10_usb_hid.ino
-arduino-cli upload --fqbn esp32:esp32:esp32s2 --port /dev/ttyUSB0 firmware/h10_usb_hid.ino
+# Build + flash (ESP32-S3 default FQBN)
+arduino-cli compile --fqbn esp32:esp32:esp32s3 firmware/h10_usb_hid/h10_usb_hid.ino
+arduino-cli upload --fqbn esp32:esp32:esp32s3 --port /dev/ttyUSB0 firmware/h10_usb_hid/h10_usb_hid.ino
 
-# Standard ESP32 compiles but USB HID features are inactive
-arduino-cli compile --fqbn esp32:esp32:esp32 firmware/h10_usb_hid.ino
+# Offline host demo (no board needed)
+python3 host/h10_cli.py --demo
+python3 host/h10_cli.py --text "hello"
 ```
 
-## Legal Disclaimer
+Serial commands start with `type`, `key`, `combo`, `macro`, `mouse`, `click`, `scroll`, `jiggle`,
+`circle`, and `payload …`. See `firmware/README.md` for the full command reference and wiring.
 
-## IMPORTANT: Read before use.
+## Tests
 
-This project is provided for **educational and authorized security testing purposes only**.
+```bash
+python3 -m unittest discover -s tests -v
+```
 
-### Authorization Requirements
-- You MUST have explicit written permission from the system owner before using this tool
-- Unauthorized keystroke injection into computer systems is illegal under federal and state laws
-- This tool should ONLY be used on systems you own or have written authorization to test
+## Project structure
 
-### Legal Framework
-- **Computer Fraud and Abuse Act (CFAA)**: Unauthorized access to computer systems is a federal crime
-- **Wiretap Act (18 U.S.C. § 2511)**: Interception of electronic communications without consent is illegal
-- **State Laws**: Many states have additional computer crime and wiretapping statutes
-- **GDPR/CCPA**: Keystroke logging may capture personal data subject to privacy regulations
+- `firmware/h10_usb_hid/h10_usb_hid.ino` — ESP32-S2/S3 HID sketch.
+- `host/` — `h10_cli.py` and `hw_common.py` host helpers.
+- `tests/` — unit tests.
 
-### Acceptable Use
-- Testing USB HID attack vectors on your own systems
-- Authorized penetration testing with written scope
-- Academic research in controlled lab environments
-- Security education and training
-- Developing legitimate USB peripherals
+## Documentation
 
-### Prohibited Use
-- Injecting keystrokes into systems you don't own
-- Keystroke logging without user consent
-- Bypassing authentication systems illegally
-- Any activity that violates applicable laws or regulations
-- Commercial use without proper licensing
+- [firmware/README.md](firmware/README.md) — board, wiring, and serial reference.
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [SECURITY.md](SECURITY.md)
+- [ETHICS.md](ETHICS.md) · [SCOPE.md](SCOPE.md)
 
-### No Warranty
-This software is provided "AS IS" without warranty of any kind. The author is not responsible for any misuse or damage caused by this software.
+## Contributing
 
-### Responsible Disclosure
-If you discover vulnerabilities using this tool, follow responsible disclosure practices:
-1. Report to the vendor/owner privately
-2. Allow reasonable time for remediation
-3. Do not exploit beyond proof of concept
-
-## Live Lab Test Plan
-
-Run ONLY on an isolated, authorized own-lab bench against devices, networks,
-and spectrum **you own**. No third-party callers, bystanders, or spectrum users
-may be within range of any test transmission.
-
-1. **Isolate** - Put the DUT in a shielded/Faraday enclosure or a room with no
-   third-party devices in range. Use attenuators on any transmit path.
-2. **Own devices only** - Every target (AP, remote, tag, GPS module, drone FC,
-   receiver) must be your own hardware.
-3. **Lowest power, shortest duration** - Start at minimum TX power / duty cycle
-   and use only the seconds needed.
-4. **Record** - Save before/after logs to `reports/` (git-ignored). Never
-   capture or store third-party traffic.
-5. **Cleanup** - Restore placeholder SSIDs (`lab-*`), MACs (`00:11:22:33:44:55`),
-   example.com / RFC5737 addresses, and clear any captured data from the device.
-
-> Jammer / spoofer / replay projects are **proofs for study and simulation**
-> only. They refuse live interference scenarios: a live bench trigger requires
-> the `LAB_*` allowlist environment variable AND explicit `--yes` confirmation,
-> and even then only against your own hardware in a shielded bench.
-
-## Metrics
-
-| Metric | Target | Where |
-|---|---|---|
-| Firmware compile | `arduino-cli compile --fqbn esp32:esp32:esp32s3 firmware/h10_usb_hid` PASS | CI/local |
-| Host helper | `python3 host/h10_cli.py --demo` exits 0 (offline) | host/ |
-| Unit tests | `python3 -m unittest discover -s tests` passes | tests/ |
-| py_compile | every `host/*.py` compiles clean | CI/local |
+See [CONTRIBUTING.md](CONTRIBUTING.md). Keep the lab-only gates and legal notices intact.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
